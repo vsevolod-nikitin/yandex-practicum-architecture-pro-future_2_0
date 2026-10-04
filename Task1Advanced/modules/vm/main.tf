@@ -19,7 +19,7 @@ resource "yandex_compute_disk" "boot_disk" {
   name     = "${var.vm_name}-boot"
   type     = "network-hdd"
   zone     = var.zone
-  size     = 20
+  size     = 15
   image_id = data.yandex_compute_image.my_image.id
 }
 
