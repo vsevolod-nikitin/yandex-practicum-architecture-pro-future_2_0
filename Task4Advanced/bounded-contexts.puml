@@ -12,7 +12,7 @@ package "Medical" <<bounded-context>> {
 
 package "AI Diagnostics" <<bounded-context>> {
   rectangle "AIAnalysis" as aiAgg
-  note right: Обработка результатов исследований\nс использованием моделей ИИ
+  note left: Обработка результатов исследований\nс использованием моделей ИИ
 }
 
 package "Fintech" <<bounded-context>> {
@@ -40,12 +40,12 @@ custAgg --> finAgg : "CustomerRegistered → AccountOpened"
 medAgg --> aiAgg : "ImagingStudyRequested → AIAnalysisRequested"
 aiAgg --> medAgg : "AIAnalysisCompleted → ImagingStudyCompleted"
 medAgg --> invAgg : "PrescriptionIssued → InventoryItemUsed"
-medAgg --> billAgg : "AppointmentCompleted → InvoiceCreated"
 medAgg --> staffAgg : "AppointmentScheduled → StaffAssigned"
+medAgg --> billAgg : "AppointmentCompleted → InvoiceCreated"
 finAgg --> billAgg : "LoanApproved → InvoiceCreated (выплата)"
 billAgg --> finAgg : "PaymentReceived → TransactionPosted"
 
-legend right
+legend
 Стрелки обозначают обмены событиями между контекстами.
 endlegend
 
