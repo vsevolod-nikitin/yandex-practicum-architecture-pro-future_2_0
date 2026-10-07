@@ -1,0 +1,59 @@
+@startuml event-storming
+
+package "Customer Context"  {
+  rectangle "CustomerRegistered" as custReg
+  rectangle "CustomerUpdated" as custUpd
+}
+
+package "Fintech Context" {
+  rectangle "AccountOpened" as accOpen
+  rectangle "LoanApplicationSubmitted" as loanSub
+  rectangle "LoanApproved" as loanAppr
+  rectangle "LoanDisbursed" as loanDisb
+  rectangle "TransactionPosted" as txPost
+}
+
+package "Medical Context" {
+  rectangle "PatientCreated" as patCreate
+  rectangle "AppointmentScheduled" as apptSched
+  rectangle "AppointmentCompleted" as apptComp
+  rectangle "DiagnosisRecorded" as diag
+  rectangle "ImagingStudyRequested" as studyReq
+  rectangle "ImagingStudyCompleted" as studyComp
+  rectangle "PrescriptionIssued" as rx
+}
+
+package "AI Diagnostics Context" {
+  rectangle "AIAnalysisRequested" as aiReq
+  rectangle "AIAnalysisCompleted" as aiComp
+}
+
+package "Inventory Context"  {
+  rectangle "InventoryItemUsed" as invUsed
+  rectangle "InventoryLow" as invLow
+}
+
+package "Staff Context" {
+  rectangle "StaffAssigned" as staffAssign
+}
+
+package "Billing Context"  {
+  rectangle "InvoiceCreated" as invCreate
+  rectangle "PaymentReceived" as payRecv
+}
+
+custReg --> patCreate : "регистрирует пациента"
+custReg --> accOpen : "создаёт счёт"
+custUpd --> patCreate : "обновляет сведения о пациенте"
+
+apptComp --> invCreate : "оформляет счёт"
+studyReq --> aiReq : "инициирует анализ"
+aiComp --> studyComp : "отмечает исследование как завершённое"
+diag --> loanAppr : "может учитываться при решении о выдаче кредита"
+rx --> invUsed : "уменьшает остаток материалов"
+invLow --> invUsed : "служит сигналом к пополнению запасов"
+apptSched --> staffAssign : "закрепляет сотрудника"
+loanAppr --> invCreate : "оформляет счёт для перечисления кредита"
+payRecv --> txPost : "регистрирует операцию"
+
+@enduml

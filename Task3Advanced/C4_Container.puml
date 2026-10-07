@@ -1,0 +1,73 @@
+@startuml C4_Container
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Платформа Future 2.0
+
+Person(employee, "Сотрудник")
+
+System_Boundary(future, "") {
+    Container(portal, "Портал самообслуживания", "React + Java/Go", "Создание отчётов и поиск нужных данных")
+    Container(api_gateway, "API Gateway", "Kong", "Направление запросов, аутентификация и ограничение их частоты")
+
+    Container(event_platform, "Событийная платформа", "Apache Kafka", "Транспорт и хранение событий; маршрутизация по топикам и группам потребителей")
+    Container(schema_registry, "Реестр схем событий", "Schema Registry", "Проверка схем и совместимости контрактов событий")
+
+    Container(domain_service, "Доменные сервисы", "Java/Go/Python", "Микросервисы с реализацией бизнес-правил")
+    ContainerDb(domain_db, "БД доменов", "PostgreSQL / MongoDB", "Хранилища данных для работы доменов")
+    Container(domain_data_product, "Дата-продукты домена", "Iceberg tables / APIs", "Данные домена, доступные для аналитики")
+    Container(integration_services, "Интеграционные сервисы", "Java / Kafka clients", "Маршрутизация между системами, преобразование форматов и техническое обогащение; без бизнес-правил доменов")
+    Container(stream_processing, "Потоковая обработка", "Apache Flink", "Потоковые преобразования и подготовка событий для дата-продуктов")
+    Container(batch_processing, "Пакетная обработка", "Apache Spark", "Пакетные ETL/ELT-преобразования")
+    Container(data_quality, "Контроль качества данных (ФЛК)", "Great Expectations / Deequ", "Проверки качества потоковых и пакетных данных, карантин невалидных записей")
+
+    Container(data_catalog, "Каталог данных", "DataHub", "Описание данных, владельцы, качество и происхождение")
+    Container(data_lakehouse, "Data Lakehouse", "S3 + Iceberg + Nessie", "Общее хранилище данных с поддержкой версий")
+    Container(query_engine, "Универсальный движок запросов", "Trino / Dremio", "Обработка SQL-запросов к данным")
+
+    Container(iam, "IAM", "Keycloak", "Контроль идентификации и прав доступа")
+    Container(airflow, "Оркестратор", "Apache Airflow", "Планирование и контроль пакетных ETL/ELT-процессов")
+    Container(ac, "Адаптеры легаси и ACL", "Kafka Connect / Camel (переходно)", "Изоляция протоколов легаси и преобразование сообщений на границе")
+    Container(bi_tools, "BI-инструменты", "Power BI / Tableau / Superset", "Создание визуализаций и аналитика по запросу")
+}
+
+System_Ext(legacy_dwh, "Legacy DWH", "SQL Server 2008")
+System_Ext(legacy_esb, "Legacy ESB", "Apache Camel")
+
+Rel_U(domain_service, domain_db, "Читает и записывает данные", "TCP")
+Rel(domain_service, event_platform, "Публикует события (outbox); потребители обрабатывают идемпотентно", "Kafka")
+Rel(domain_service, schema_registry, "Проверяет схемы публикуемых событий", "Avro / Protobuf")
+Rel(event_platform, stream_processing, "Доставляет поток событий", "Kafka")
+Rel(stream_processing, data_quality, "Передаёт преобразованные данные на ФЛК", "API")
+Rel(data_quality, domain_data_product, "Публикует прошедшие проверки данные", "API")
+Rel(event_platform, integration_services, "Доставляет события по топикам", "Kafka")
+Rel(integration_services, event_platform, "Маршрутизирует и публикует интеграционные события; ошибки — в DLQ", "Kafka")
+Rel_U(integration_services, schema_registry, "Проверяет схемы интеграционных событий", "Avro / Protobuf")
+Rel(domain_data_product, data_lakehouse, "Сохраняет данные в Iceberg-таблицах", "S3 API")
+Rel_U(airflow, batch_processing, "Запускает и контролирует пакетные задания", "API")
+Rel(batch_processing, data_quality, "Передаёт результаты пакетных преобразований на ФЛК", "API")
+Rel(data_quality, data_lakehouse, "Записывает прошедшие проверки данные", "S3 API")
+
+Rel(domain_data_product, data_catalog, "Добавляет сведения о продукте", "OpenAPI / REST")
+Rel(data_catalog, query_engine, "Передаёт описания данных", "REST")
+
+Rel(bi_tools, query_engine, "Отправляет SQL-запросы", "JDBC")
+Rel(bi_tools, data_catalog, "Находит нужные данные", "REST")
+
+Rel(employee, portal, "Обращается к порталу", "HTTPS")
+Rel(portal, api_gateway, "Передаёт запросы", "HTTP")
+
+Rel(api_gateway, query_engine, "Перенаправляет запросы", "HTTP/REST")
+Rel(api_gateway, data_catalog, "Перенаправляет запросы", "HTTP/REST")
+Rel(api_gateway, bi_tools, "Перенаправляет запросы", "HTTP/API")
+Rel_R(api_gateway, domain_service, "Маршрутизирует синхронные запросы", "HTTP/REST")
+
+Rel_L(api_gateway, iam, "Проверяет токены доступа", "OIDC")
+
+Rel_R(query_engine, data_lakehouse, "Получает данные", "S3 + Iceberg")
+Rel_L(airflow, query_engine, "Запускает SQL/ELT-запросы", "SQL/API")
+Rel(ac, legacy_dwh, "Получает данные", "JDBC")
+Rel(ac, legacy_esb, "Обменивается сообщениями", "JMS")
+Rel(ac, event_platform, "Передаёт события", "Kafka")
+
+@enduml

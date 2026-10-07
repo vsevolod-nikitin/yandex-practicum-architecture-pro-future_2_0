@@ -1,0 +1,52 @@
+@startuml bounded-contexts
+
+package "Customer" <<bounded-context>> {
+  rectangle "CustomerProfile" as custAgg
+  note right: Создание и сопровождение\nпрофилей клиентов
+}
+
+package "Medical" <<bounded-context>> {
+  rectangle "Patient, Appointment,\nDiagnosis, ImagingStudy" as medAgg
+  note right: Работа с данными пациентов,\nисторией лечения, приёмами\nи назначениями
+}
+
+package "AI Diagnostics" <<bounded-context>> {
+  rectangle "AIAnalysis" as aiAgg
+  note left: Обработка результатов исследований\nс использованием моделей ИИ
+}
+
+package "Fintech" <<bounded-context>> {
+  rectangle "Account, Loan,\nTransaction" as finAgg
+  note right: Работа со счетами,\nкредитами и финансовыми операциями
+}
+
+package "Inventory" <<bounded-context>> {
+  rectangle "InventoryItem" as invAgg
+  note right: Контроль запасов оборудования\nи расходных материалов
+}
+
+package "Staff" <<bounded-context>> {
+  rectangle "StaffMember" as staffAgg
+  note right: Работа с данными сотрудников,\nвключая врачей и операторов
+}
+
+package "Billing" <<bounded-context>> {
+  rectangle "Invoice" as billAgg
+  note right: Подготовка счетов\nза оказанную медицинскую помощь
+}
+
+custAgg --> medAgg : "CustomerRegistered → PatientCreated"
+custAgg --> finAgg : "CustomerRegistered → AccountOpened"
+medAgg --> aiAgg : "ImagingStudyRequested → AIAnalysisRequested"
+aiAgg --> medAgg : "AIAnalysisCompleted → ImagingStudyCompleted"
+medAgg --> invAgg : "PrescriptionIssued → InventoryItemUsed"
+medAgg --> staffAgg : "AppointmentScheduled → StaffAssigned"
+medAgg --> billAgg : "AppointmentCompleted → InvoiceCreated"
+finAgg --> billAgg : "LoanApproved → InvoiceCreated (выплата)"
+billAgg --> finAgg : "PaymentReceived → TransactionPosted"
+
+legend
+Стрелки обозначают обмены событиями между контекстами.
+endlegend
+
+@enduml
